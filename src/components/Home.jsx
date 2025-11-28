@@ -5,6 +5,7 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
     const [draggedIndex, setDraggedIndex] = useState(null)
     const [touchStartY, setTouchStartY] = useState(null)
     const [touchCurrentY, setTouchCurrentY] = useState(null)
+    const [isDragging, setIsDragging] = useState(false)
     const handleImport = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -49,26 +50,25 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
         setDraggedIndex(null)
     }
 
-    // Touch event handlers for mobile
-    const handleTouchStart = (e, index) => {
+    // Touch event handlers for mobile - only for drag handle
+    const handleDragHandleTouchStart = (e, index) => {
+        e.stopPropagation()
+        setIsDragging(true)
         setDraggedIndex(index)
         setTouchStartY(e.touches[0].clientY)
         setTouchCurrentY(e.touches[0].clientY)
     }
 
-    const handleTouchMove = (e, index) => {
-        if (draggedIndex === null) return
+    const handleTouchMove = (e) => {
+        if (!isDragging || draggedIndex === null) return
         e.preventDefault()
 
         const touchY = e.touches[0].clientY
         setTouchCurrentY(touchY)
 
-        // Get the element being dragged
-        const draggedElement = e.currentTarget
-        const rect = draggedElement.getBoundingClientRect()
-
-        // Find which element we're hovering over
-        const elements = Array.from(draggedElement.parentNode.children).filter(el =>
+        // Find the container of set items
+        const setContainer = e.currentTarget.parentNode
+        const elements = Array.from(setContainer.children).filter(el =>
             el.draggable === true // Only consider draggable elements (exclude the "Create New Set" button)
         )
         let hoveredIndex = null
@@ -94,6 +94,7 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
     }
 
     const handleTouchEnd = () => {
+        setIsDragging(false)
         setDraggedIndex(null)
         setTouchStartY(null)
         setTouchCurrentY(null)
@@ -131,8 +132,7 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                         onDragStart={() => handleDragStart(idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
                         onDragEnd={handleDragEnd}
-                        onTouchStart={(e) => handleTouchStart(e, idx)}
-                        onTouchMove={(e) => handleTouchMove(e, idx)}
+                        onTouchMove={(e) => handleTouchMove(e)}
                         onTouchEnd={handleTouchEnd}
                         className="glass"
                         style={{
@@ -142,14 +142,23 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                             display: 'flex',
                             alignItems: 'center',
                             gap: '1.5rem',
-                            cursor: 'grab',
+                            cursor: 'default',
                             opacity: draggedIndex === idx ? 0.5 : 1,
-                            transition: 'opacity 0.2s',
-                            touchAction: 'none',
-                            userSelect: 'none'
+                            transition: 'opacity 0.2s'
                         }}
                     >
-                        <span style={{ cursor: 'grab', fontSize: '1.5em', opacity: 0.5 }}>⋮⋮</span>
+                        <span
+                            onTouchStart={(e) => handleDragHandleTouchStart(e, idx)}
+                            style={{
+                                cursor: 'grab',
+                                fontSize: '1.5em',
+                                opacity: 0.5,
+                                padding: '0.5rem',
+                                margin: '-0.5rem',
+                                touchAction: 'none',
+                                userSelect: 'none'
+                            }}
+                        >⋮⋮</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <h2 style={{ marginTop: 0, marginBottom: '0.3rem', fontSize: '1.3rem' }}>{set.title}</h2>
                             <p style={{ opacity: 0.6, margin: 0, fontSize: '0.9rem' }}>{set.songs.length} Songs</p>

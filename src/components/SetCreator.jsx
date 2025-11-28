@@ -77,6 +77,7 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
     const [draggedIndex, setDraggedIndex] = useState(null)
     const [touchStartY, setTouchStartY] = useState(null)
     const [touchCurrentY, setTouchCurrentY] = useState(null)
+    const [isDragging, setIsDragging] = useState(false)
 
     // Auto-save functionality
     const isInitialMount = useRef(true)
@@ -161,26 +162,25 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
         setDraggedIndex(null)
     }
 
-    // Touch event handlers for mobile
-    const handleTouchStart = (e, index) => {
+    // Touch event handlers for mobile - only for drag handle
+    const handleDragHandleTouchStart = (e, index) => {
+        e.stopPropagation()
+        setIsDragging(true)
         setDraggedIndex(index)
         setTouchStartY(e.touches[0].clientY)
         setTouchCurrentY(e.touches[0].clientY)
     }
 
-    const handleTouchMove = (e, index) => {
-        if (draggedIndex === null) return
+    const handleTouchMove = (e) => {
+        if (!isDragging || draggedIndex === null) return
         e.preventDefault()
 
         const touchY = e.touches[0].clientY
         setTouchCurrentY(touchY)
 
-        // Get the element being dragged
-        const draggedElement = e.currentTarget
-        const rect = draggedElement.getBoundingClientRect()
-
-        // Find which element we're hovering over
-        const elements = Array.from(draggedElement.parentNode.children)
+        // Find the container of song items
+        const songContainer = e.currentTarget.parentNode
+        const elements = Array.from(songContainer.children)
         let hoveredIndex = null
 
         for (let i = 0; i < elements.length; i++) {
@@ -204,6 +204,7 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
     }
 
     const handleTouchEnd = () => {
+        setIsDragging(false)
         setDraggedIndex(null)
         setTouchStartY(null)
         setTouchCurrentY(null)
@@ -328,8 +329,7 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                                     onDragStart={() => handleDragStart(idx)}
                                     onDragOver={(e) => handleDragOver(e, idx)}
                                     onDragEnd={handleDragEnd}
-                                    onTouchStart={(e) => handleTouchStart(e, idx)}
-                                    onTouchMove={(e) => handleTouchMove(e, idx)}
+                                    onTouchMove={(e) => handleTouchMove(e)}
                                     onTouchEnd={handleTouchEnd}
                                     className="glass"
                                     style={{
@@ -338,16 +338,25 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
                                         background: `linear-gradient(90deg, ${song.color}11, transparent)`,
-                                        cursor: 'grab',
+                                        cursor: 'default',
                                         opacity: draggedIndex === idx ? 0.5 : 1,
-                                        transition: 'opacity 0.2s',
-                                        touchAction: 'none',
-                                        userSelect: 'none'
+                                        transition: 'opacity 0.2s'
                                     }}
                                 >
                                     <div style={{ overflow: 'hidden', flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ cursor: 'grab', fontSize: '1.2em', opacity: 0.5 }}>⋮⋮</span>
+                                            <span
+                                                onTouchStart={(e) => handleDragHandleTouchStart(e, idx)}
+                                                style={{
+                                                    cursor: 'grab',
+                                                    fontSize: '1.2em',
+                                                    opacity: 0.5,
+                                                    padding: '0.5rem',
+                                                    margin: '-0.5rem',
+                                                    touchAction: 'none',
+                                                    userSelect: 'none'
+                                                }}
+                                            >⋮⋮</span>
                                             <span style={{ background: 'rgba(255,255,255,0.1)', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8em' }}>{idx + 1}</span>
                                             <strong>{song.title}</strong>
                                         </div>

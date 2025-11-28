@@ -1,16 +1,50 @@
 import React from 'react'
 
-export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDeleteSet }) {
+export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDeleteSet, onExportData, onImportData }) {
+    const handleImport = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        onImportData(data);
+                    } catch (error) {
+                        alert('Error reading file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    };
+
     return (
         <div className="animate-fade-in" style={{ width: '100%' }}>
-            <h1>Music Sets</h1>
-            <p style={{ opacity: 0.7, marginBottom: '3rem' }}>Select a set to start or create a new one.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                    <h1 style={{ margin: 0 }}>Music Sets</h1>
+                    <p style={{ opacity: 0.7, margin: '0.5rem 0 0 0' }}>Select a set to start or create a new one.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={onExportData} style={{ padding: '0.6rem 1rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)' }} title="Export all sets to JSON">
+                        📥 Export
+                    </button>
+                    <button onClick={handleImport} style={{ padding: '0.6rem 1rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)' }} title="Import sets from JSON">
+                        📤 Import
+                    </button>
+                </div>
+            </div>
 
             <div style={{
                 display: 'grid',
                 gap: '1.5rem',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                marginBottom: '2rem'
+                marginTop: '2rem'
             }}>
                 {sets.map(set => (
                     <div key={set.id} className="glass" style={{ padding: '2rem', textAlign: 'left', position: 'relative', display: 'flex', flexDirection: 'column' }}>

@@ -83,6 +83,54 @@ function App() {
     }
   }
 
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(sets, null, 2)
+    const blob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `setdeboda-backup-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportData = async (importedSets) => {
+    if (!Array.isArray(importedSets)) {
+      alert('Invalid data format. Expected an array of sets.')
+      return
+    }
+
+    const confirmImport = confirm(
+      `You are about to import ${importedSets.length} sets.\n\n` +
+      `This will ADD them to your existing ${sets.length} sets.\n\n` +
+      `Continue?`
+    )
+
+    if (!confirmImport) return
+
+    let imported = 0
+    let failed = 0
+
+    for (const set of importedSets) {
+      try {
+        await createSet(set)
+        imported++
+      } catch (err) {
+        console.error(`Failed to import "${set.title}":`, err)
+        failed++
+      }
+    }
+
+    // Reload data
+    await loadSets()
+
+    alert(
+      `Import complete!\n\n` +
+      `✅ Successfully imported: ${imported}\n` +
+      (failed > 0 ? `❌ Failed: ${failed}` : '')
+    )
+  }
+
   const activeSet = sets.find(s => s.id === activeSetId)
   const editingSet = sets.find(s => s.id === editingSetId)
 
@@ -122,6 +170,8 @@ function App() {
           onSelectSet={handleSelectSet}
           onEditSet={handleEditSet}
           onDeleteSet={handleDeleteSet}
+          onExportData={handleExportData}
+          onImportData={handleImportData}
         />
       )}
 

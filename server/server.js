@@ -3,7 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pool, { initDB } from './db.js';
 
-dotenv.config();
+// Load .env file if it exists (for local development)
+dotenv.config({ path: '.env' });
 
 const app = express();
 const PORT = process.env.PORT || 3001;

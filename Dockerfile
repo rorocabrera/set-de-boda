@@ -18,11 +18,11 @@ RUN npm install --production
 
 # Copy server files
 COPY server/*.js ./
-COPY server/.env ./
 
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /app/dist ./dist
 
 EXPOSE 3001
 
+# Environment variables will be provided by Coolify
 CMD ["node", "server.js"]

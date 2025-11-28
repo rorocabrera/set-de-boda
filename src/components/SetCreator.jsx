@@ -101,7 +101,7 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
             setSaveStatus('saving')
             // Debounce auto-save by 500ms
             autoSaveTimeoutRef.current = setTimeout(() => {
-                onSave({ title, songs })
+                onSave({ title, songs }, true) // Pass true to skip navigation
                 setSaveStatus('saved')
             }, 500)
         }

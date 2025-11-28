@@ -40,6 +40,16 @@ export async function deleteSet(id) {
   return response.json();
 }
 
+export async function reorderSets(setIds) {
+  const response = await fetch(`${API_URL}/sets/reorder`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ setIds })
+  });
+  if (!response.ok) throw new Error('Failed to reorder sets');
+  return response.json();
+}
+
 // Migration helper: export localStorage data for backup
 export function exportLocalStorageData() {
   const data = localStorage.getItem('music-sets');

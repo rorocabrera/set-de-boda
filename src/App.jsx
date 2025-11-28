@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Home from './components/Home'
 import SetCreator from './components/SetCreator'
 import SetViewer from './components/SetViewer'
-import { fetchSets, createSet, updateSet, deleteSet as apiDeleteSet, migrateLocalDataToServer } from './api'
+import { fetchSets, createSet, updateSet, deleteSet as apiDeleteSet, reorderSets, migrateLocalDataToServer } from './api'
 
 function App() {
   const [sets, setSets] = useState([])
@@ -46,17 +46,21 @@ function App() {
     }
   }
 
-  const handleSaveSet = async (setData) => {
+  const handleSaveSet = async (setData, skipNavigation = false) => {
     try {
       if (editingSetId) {
         await updateSet(editingSetId, setData)
         setSets(sets.map(s => s.id === editingSetId ? { ...setData, id: editingSetId } : s))
-        setEditingSetId(null)
+        if (!skipNavigation) {
+          setEditingSetId(null)
+        }
       } else {
         const newSet = await createSet(setData)
         setSets([...sets, newSet])
       }
-      setView('home')
+      if (!skipNavigation) {
+        setView('home')
+      }
     } catch (err) {
       alert('Failed to save set: ' + err.message)
     }
@@ -131,10 +135,14 @@ function App() {
     )
   }
 
-  const handleReorderSets = (reorderedSets) => {
+  const handleReorderSets = async (reorderedSets) => {
     setSets(reorderedSets)
-    // Note: Order is maintained in memory but not persisted to server
-    // This is intentional as the backend doesn't have an order field
+    try {
+      const setIds = reorderedSets.map(set => set.id)
+      await reorderSets(setIds)
+    } catch (err) {
+      console.error('Failed to persist set order:', err)
+    }
   }
 
   const activeSet = sets.find(s => s.id === activeSetId)

@@ -20,7 +20,7 @@ await initDB();
 // GET all sets
 app.get('/api/sets', async (req, res) => {
   try {
-    const [sets] = await pool.query('SELECT * FROM sets ORDER BY created_at DESC');
+    const [sets] = await pool.query('SELECT * FROM sets ORDER BY position');
 
     // Get songs for each set
     for (const set of sets) {
@@ -70,10 +70,14 @@ app.post('/api/sets', async (req, res) => {
     const { title, songs } = req.body;
     const setId = Date.now().toString();
 
+    // Get max position and add 1
+    const [maxPos] = await connection.query('SELECT COALESCE(MAX(position), -1) + 1 as nextPos FROM sets');
+    const position = maxPos[0].nextPos;
+
     // Insert set
     await connection.query(
-      'INSERT INTO sets (id, title) VALUES (?, ?)',
-      [setId, title]
+      'INSERT INTO sets (id, title, position) VALUES (?, ?, ?)',
+      [setId, title, position]
     );
 
     // Insert songs
@@ -146,6 +150,33 @@ app.delete('/api/sets/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting set:', error);
     res.status(500).json({ error: 'Failed to delete set' });
+  }
+});
+
+// PUT update set positions
+app.put('/api/sets/reorder', async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { setIds } = req.body;
+
+    // Update position for each set based on array index
+    for (let i = 0; i < setIds.length; i++) {
+      await connection.query(
+        'UPDATE sets SET position = ? WHERE id = ?',
+        [i, setIds[i]]
+      );
+    }
+
+    await connection.commit();
+    res.json({ message: 'Set positions updated' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error updating set positions:', error);
+    res.status(500).json({ error: 'Failed to update set positions' });
+  } finally {
+    connection.release();
   }
 });
 

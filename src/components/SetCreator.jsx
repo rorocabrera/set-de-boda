@@ -82,12 +82,14 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
     // Auto-save functionality
     const isInitialMount = useRef(true)
     const autoSaveTimeoutRef = useRef(null)
+    const lastSavedData = useRef(null)
     const [saveStatus, setSaveStatus] = useState('saved') // 'saving', 'saved'
 
     useEffect(() => {
         // Skip auto-save on initial mount
         if (isInitialMount.current) {
             isInitialMount.current = false
+            lastSavedData.current = { title, songs: JSON.stringify(songs) }
             return
         }
 
@@ -96,12 +98,18 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
             clearTimeout(autoSaveTimeoutRef.current)
         }
 
-        // Only auto-save if there's a title
-        if (title.trim()) {
+        // Only auto-save if there's a title and data has changed
+        const currentData = { title, songs: JSON.stringify(songs) }
+        const hasChanged = !lastSavedData.current ||
+                          lastSavedData.current.title !== currentData.title ||
+                          lastSavedData.current.songs !== currentData.songs
+
+        if (title.trim() && hasChanged) {
             setSaveStatus('saving')
             // Debounce auto-save by 500ms
             autoSaveTimeoutRef.current = setTimeout(() => {
                 onSave({ title, songs }, true) // Pass true to skip navigation
+                lastSavedData.current = currentData
                 setSaveStatus('saved')
             }, 500)
         }
@@ -112,7 +120,7 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                 clearTimeout(autoSaveTimeoutRef.current)
             }
         }
-    }, [title, songs, onSave])
+    }, [title, songs])
 
     const addSong = () => {
         if (!currentSong.title) return

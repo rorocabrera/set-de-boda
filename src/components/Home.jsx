@@ -139,32 +139,31 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                             padding: '1.5rem',
                             textAlign: 'left',
                             position: 'relative',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1.5rem',
                             cursor: 'default',
                             opacity: draggedIndex === idx ? 0.5 : 1,
                             transition: 'opacity 0.2s'
                         }}
                     >
-                        <span
-                            onTouchStart={(e) => handleDragHandleTouchStart(e, idx)}
-                            style={{
-                                cursor: 'grab',
-                                fontSize: '1.5em',
-                                opacity: 0.5,
-                                padding: '0.5rem',
-                                margin: '-0.5rem',
-                                touchAction: 'none',
-                                userSelect: 'none'
-                            }}
-                        >⋮⋮</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <h2 style={{ marginTop: 0, marginBottom: '0.3rem', fontSize: '1.3rem' }}>{set.title}</h2>
-                            <p style={{ opacity: 0.6, margin: 0, fontSize: '0.9rem' }}>{set.songs.length} Songs</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                            <span
+                                onTouchStart={(e) => handleDragHandleTouchStart(e, idx)}
+                                style={{
+                                    cursor: 'grab',
+                                    fontSize: '1.5em',
+                                    opacity: 0.5,
+                                    padding: '0.5rem',
+                                    margin: '-0.5rem',
+                                    touchAction: 'none',
+                                    userSelect: 'none'
+                                }}
+                            >⋮⋮</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <h2 style={{ marginTop: 0, marginBottom: '0.3rem', fontSize: '1.3rem' }}>{set.title}</h2>
+                                <p style={{ opacity: 0.6, margin: 0, fontSize: '0.9rem' }}>{set.songs.length} Songs</p>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="primary" onClick={() => onSelectSet(set.id)} style={{ padding: '0.6rem 1.2rem' }}>Open</button>
+                        <div style={{ display: 'flex', gap: '0.5rem', paddingLeft: 'calc(1.5em + 1rem)' }}>
+                            <button className="primary" onClick={() => onSelectSet(set.id)} style={{ padding: '0.6rem 1.2rem', flex: 1 }}>Open</button>
                             <button onClick={(e) => { e.stopPropagation(); onEditSet(set.id); }} style={{ padding: '0.6rem 1rem', background: 'rgba(100,150,255,0.2)', color: '#88aaff' }}>✎</button>
                             <button onClick={(e) => { e.stopPropagation(); onDeleteSet(set.id); }} style={{ padding: '0.6rem 1rem', background: 'rgba(255,50,50,0.2)', color: '#ff8888' }}>✕</button>
                         </div>

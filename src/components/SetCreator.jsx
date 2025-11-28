@@ -1,11 +1,80 @@
 import React, { useState } from 'react'
 
+function EditSongCard({ song, index, onSave, onCancel }) {
+    const [editedSong, setEditedSong] = useState({ ...song })
+
+    const handleSave = () => {
+        if (!editedSong.title) return alert('Song title is required')
+        onSave(index, editedSong)
+    }
+
+    return (
+        <div className="glass" style={{ padding: '1.5rem', background: `linear-gradient(135deg, ${editedSong.color}22, transparent)` }}>
+            <h4 style={{ marginTop: 0, marginBottom: '1rem', opacity: 0.8 }}>Editing Song #{index + 1}</h4>
+
+            <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8, fontSize: '0.9em' }}>Song Title</label>
+            <input
+                value={editedSong.title}
+                onChange={e => setEditedSong({ ...editedSong, title: e.target.value })}
+                placeholder="Song Name"
+                style={{ marginBottom: '1rem' }}
+            />
+
+            <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8, fontSize: '0.9em' }}>Lyrics</label>
+            <textarea
+                value={editedSong.lyrics}
+                onChange={e => setEditedSong({ ...editedSong, lyrics: e.target.value })}
+                placeholder="Paste lyrics here..."
+                rows={8}
+                style={{ fontFamily: 'monospace', lineHeight: '1.4', marginBottom: '1rem' }}
+            />
+
+            <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8, fontSize: '0.9em' }}>Card Color Theme</label>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                {[
+                    { c: '#ffffff', n: 'White' },
+                    { c: '#ffcccc', n: 'Red' },
+                    { c: '#ccffcc', n: 'Green' },
+                    { c: '#ccccff', n: 'Blue' },
+                    { c: '#ffffcc', n: 'Yellow' },
+                    { c: '#ffccff', n: 'Pink' },
+                    { c: '#ccffff', n: 'Cyan' },
+                    { c: '#ffd8a8', n: 'Orange' }
+                ].map(({ c }) => (
+                    <div
+                        key={c}
+                        onClick={() => setEditedSong({ ...editedSong, color: c })}
+                        style={{
+                            width: '32px', height: '32px', borderRadius: '50%', background: c,
+                            cursor: 'pointer',
+                            border: editedSong.color === c ? '3px solid white' : '1px solid rgba(255,255,255,0.2)',
+                            boxShadow: editedSong.color === c ? '0 0 10px rgba(255,255,255,0.5)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                    />
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="primary" onClick={handleSave} style={{ flex: 1 }}>Save Changes</button>
+                <button onClick={onCancel} style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>Cancel</button>
+            </div>
+        </div>
+    )
+}
+
 export default function SetCreator({ onSave, onCancel, initialData }) {
     const [title, setTitle] = useState(initialData?.title || '')
     const [songs, setSongs] = useState(initialData?.songs || [])
 
     // Temporary state for new song
     const [currentSong, setCurrentSong] = useState({ title: '', lyrics: '', color: '#ffffff' })
+
+    // State for editing existing songs
+    const [editingIndex, setEditingIndex] = useState(null)
+
+    // State for drag and drop
+    const [draggedIndex, setDraggedIndex] = useState(null)
 
     const addSong = () => {
         if (!currentSong.title) return
@@ -15,6 +84,44 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
 
     const removeSong = (index) => {
         setSongs(songs.filter((_, i) => i !== index))
+        if (editingIndex === index) setEditingIndex(null)
+    }
+
+    const startEditing = (index) => {
+        setEditingIndex(index)
+    }
+
+    const saveEdit = (index, updatedSong) => {
+        const newSongs = [...songs]
+        newSongs[index] = updatedSong
+        setSongs(newSongs)
+        setEditingIndex(null)
+    }
+
+    const cancelEdit = () => {
+        setEditingIndex(null)
+    }
+
+    // Drag and drop handlers
+    const handleDragStart = (index) => {
+        setDraggedIndex(index)
+    }
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault()
+        if (draggedIndex === null || draggedIndex === index) return
+
+        const newSongs = [...songs]
+        const draggedSong = newSongs[draggedIndex]
+        newSongs.splice(draggedIndex, 1)
+        newSongs.splice(index, 0, draggedSong)
+
+        setSongs(newSongs)
+        setDraggedIndex(index)
+    }
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null)
     }
 
     const handleSave = () => {
@@ -106,18 +213,49 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {songs.map((song, idx) => (
-                            <div key={song.id} className="glass" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: `linear-gradient(90deg, ${song.color}11, transparent)` }}>
-                                <div style={{ overflow: 'hidden' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ background: 'rgba(255,255,255,0.1)', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8em' }}>{idx + 1}</span>
-                                        <strong>{song.title}</strong>
+                            editingIndex === idx ? (
+                                <EditSongCard
+                                    key={song.id}
+                                    song={song}
+                                    index={idx}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                />
+                            ) : (
+                                <div
+                                    key={song.id}
+                                    draggable
+                                    onDragStart={() => handleDragStart(idx)}
+                                    onDragOver={(e) => handleDragOver(e, idx)}
+                                    onDragEnd={handleDragEnd}
+                                    className="glass"
+                                    style={{
+                                        padding: '1rem',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: `linear-gradient(90deg, ${song.color}11, transparent)`,
+                                        cursor: 'grab',
+                                        opacity: draggedIndex === idx ? 0.5 : 1,
+                                        transition: 'opacity 0.2s'
+                                    }}
+                                >
+                                    <div style={{ overflow: 'hidden', flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ cursor: 'grab', fontSize: '1.2em', opacity: 0.5 }}>⋮⋮</span>
+                                            <span style={{ background: 'rgba(255,255,255,0.1)', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8em' }}>{idx + 1}</span>
+                                            <strong>{song.title}</strong>
+                                        </div>
+                                        <div style={{ fontSize: '0.8em', opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: '50px' }}>
+                                            {song.lyrics.substring(0, 40)}...
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.8em', opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: '34px' }}>
-                                        {song.lyrics.substring(0, 40)}...
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button onClick={() => startEditing(idx)} style={{ padding: '0.4em 0.8em', background: 'rgba(100,150,255,0.2)', color: '#88aaff', border: 'none' }}>✎</button>
+                                        <button onClick={() => removeSong(idx)} style={{ padding: '0.4em 0.8em', background: 'rgba(255,50,50,0.2)', color: '#ff8888', border: 'none' }}>✕</button>
                                     </div>
                                 </div>
-                                <button onClick={() => removeSong(idx)} style={{ padding: '0.4em 0.8em', background: 'rgba(255,50,50,0.2)', color: '#ff8888', border: 'none' }}>✕</button>
-                            </div>
+                            )
                         ))}
                     </div>
                 </div>

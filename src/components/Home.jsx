@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Download, Upload } from 'lucide-react'
 
-export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDeleteSet, onExportData, onImportData }) {
+export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDeleteSet, onExportData, onImportData, onReorderSets }) {
+    const [draggedIndex, setDraggedIndex] = useState(null)
     const handleImport = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -23,6 +25,28 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
         input.click();
     };
 
+    // Drag and drop handlers
+    const handleDragStart = (index) => {
+        setDraggedIndex(index)
+    }
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault()
+        if (draggedIndex === null || draggedIndex === index) return
+
+        const newSets = [...sets]
+        const draggedSet = newSets[draggedIndex]
+        newSets.splice(draggedIndex, 1)
+        newSets.splice(index, 0, draggedSet)
+
+        onReorderSets(newSets)
+        setDraggedIndex(index)
+    }
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null)
+    }
+
     return (
         <div className="animate-fade-in" style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -31,29 +55,52 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                     <p style={{ opacity: 0.7, margin: '0.5rem 0 0 0' }}>Select a set to start or create a new one.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={onExportData} style={{ padding: '0.6rem 1rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)' }} title="Export all sets to JSON">
-                        📥 Export
+                    <button onClick={onExportData} style={{ padding: '0.6rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Export all sets to JSON">
+                        <Download size={18} />
                     </button>
-                    <button onClick={handleImport} style={{ padding: '0.6rem 1rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)' }} title="Import sets from JSON">
-                        📤 Import
+                    <button onClick={handleImport} style={{ padding: '0.6rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Import sets from JSON">
+                        <Upload size={18} />
                     </button>
                 </div>
             </div>
 
             <div style={{
-                display: 'grid',
-                gap: '1.5rem',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                marginTop: '2rem'
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                marginTop: '2rem',
+                maxWidth: '800px',
+                margin: '2rem auto 0'
             }}>
-                {sets.map(set => (
-                    <div key={set.id} className="glass" style={{ padding: '2rem', textAlign: 'left', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                        <h2 style={{ marginTop: 0, fontSize: '1.5rem' }}>{set.title}</h2>
-                        <p style={{ opacity: 0.6, flex: 1 }}>{set.songs.length} Songs</p>
-                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.5rem' }}>
-                            <button className="primary" style={{ flex: 2 }} onClick={() => onSelectSet(set.id)}>Open</button>
-                            <button onClick={(e) => { e.stopPropagation(); onEditSet(set.id); }} style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>Edit</button>
-                            <button onClick={(e) => { e.stopPropagation(); onDeleteSet(set.id); }} style={{ flex: 1, background: 'rgba(255,50,50,0.2)', color: '#ff8888' }}>Delete</button>
+                {sets.map((set, idx) => (
+                    <div
+                        key={set.id}
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragOver={(e) => handleDragOver(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className="glass"
+                        style={{
+                            padding: '1.5rem',
+                            textAlign: 'left',
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1.5rem',
+                            cursor: 'grab',
+                            opacity: draggedIndex === idx ? 0.5 : 1,
+                            transition: 'opacity 0.2s'
+                        }}
+                    >
+                        <span style={{ cursor: 'grab', fontSize: '1.5em', opacity: 0.5 }}>⋮⋮</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <h2 style={{ marginTop: 0, marginBottom: '0.3rem', fontSize: '1.3rem' }}>{set.title}</h2>
+                            <p style={{ opacity: 0.6, margin: 0, fontSize: '0.9rem' }}>{set.songs.length} Songs</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="primary" onClick={() => onSelectSet(set.id)} style={{ padding: '0.6rem 1.2rem' }}>Open</button>
+                            <button onClick={(e) => { e.stopPropagation(); onEditSet(set.id); }} style={{ padding: '0.6rem 1rem', background: 'rgba(100,150,255,0.2)', color: '#88aaff' }}>✎</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDeleteSet(set.id); }} style={{ padding: '0.6rem 1rem', background: 'rgba(255,50,50,0.2)', color: '#ff8888' }}>✕</button>
                         </div>
                     </div>
                 ))}
@@ -64,17 +111,17 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                     style={{
                         padding: '2rem',
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
                         borderStyle: 'dashed',
                         background: 'rgba(255,255,255,0.02)',
-                        minHeight: '200px',
-                        color: 'inherit'
+                        minHeight: '100px',
+                        color: 'inherit',
+                        gap: '1rem'
                     }}
                 >
-                    <span style={{ fontSize: '3rem', lineHeight: 1, marginBottom: '1rem' }}>+</span>
+                    <span style={{ fontSize: '2rem', lineHeight: 1 }}>+</span>
                     <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Create New Set</span>
                 </button>
             </div>

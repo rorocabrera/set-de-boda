@@ -131,6 +131,12 @@ function App() {
     )
   }
 
+  const handleReorderSets = (reorderedSets) => {
+    setSets(reorderedSets)
+    // Note: Order is maintained in memory but not persisted to server
+    // This is intentional as the backend doesn't have an order field
+  }
+
   const activeSet = sets.find(s => s.id === activeSetId)
   const editingSet = sets.find(s => s.id === editingSetId)
 
@@ -172,6 +178,7 @@ function App() {
           onDeleteSet={handleDeleteSet}
           onExportData={handleExportData}
           onImportData={handleImportData}
+          onReorderSets={handleReorderSets}
         />
       )}
 

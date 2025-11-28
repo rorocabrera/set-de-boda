@@ -3,6 +3,10 @@
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
+
+# Ensure we install ALL dependencies (including devDependencies) for build
+ENV NODE_ENV=development
+
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .

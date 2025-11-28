@@ -3,6 +3,8 @@ import { Download, Upload } from 'lucide-react'
 
 export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDeleteSet, onExportData, onImportData, onReorderSets }) {
     const [draggedIndex, setDraggedIndex] = useState(null)
+    const [touchStartY, setTouchStartY] = useState(null)
+    const [touchCurrentY, setTouchCurrentY] = useState(null)
     const handleImport = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -47,6 +49,56 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
         setDraggedIndex(null)
     }
 
+    // Touch event handlers for mobile
+    const handleTouchStart = (e, index) => {
+        setDraggedIndex(index)
+        setTouchStartY(e.touches[0].clientY)
+        setTouchCurrentY(e.touches[0].clientY)
+    }
+
+    const handleTouchMove = (e, index) => {
+        if (draggedIndex === null) return
+        e.preventDefault()
+
+        const touchY = e.touches[0].clientY
+        setTouchCurrentY(touchY)
+
+        // Get the element being dragged
+        const draggedElement = e.currentTarget
+        const rect = draggedElement.getBoundingClientRect()
+
+        // Find which element we're hovering over
+        const elements = Array.from(draggedElement.parentNode.children).filter(el =>
+            el.draggable === true // Only consider draggable elements (exclude the "Create New Set" button)
+        )
+        let hoveredIndex = null
+
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i]
+            const elRect = el.getBoundingClientRect()
+            if (touchY >= elRect.top && touchY <= elRect.bottom) {
+                hoveredIndex = i
+                break
+            }
+        }
+
+        if (hoveredIndex !== null && hoveredIndex !== draggedIndex) {
+            const newSets = [...sets]
+            const draggedSet = newSets[draggedIndex]
+            newSets.splice(draggedIndex, 1)
+            newSets.splice(hoveredIndex, 0, draggedSet)
+
+            onReorderSets(newSets)
+            setDraggedIndex(hoveredIndex)
+        }
+    }
+
+    const handleTouchEnd = () => {
+        setDraggedIndex(null)
+        setTouchStartY(null)
+        setTouchCurrentY(null)
+    }
+
     return (
         <div className="animate-fade-in" style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -79,6 +131,9 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                         onDragStart={() => handleDragStart(idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
                         onDragEnd={handleDragEnd}
+                        onTouchStart={(e) => handleTouchStart(e, idx)}
+                        onTouchMove={(e) => handleTouchMove(e, idx)}
+                        onTouchEnd={handleTouchEnd}
                         className="glass"
                         style={{
                             padding: '1.5rem',
@@ -89,7 +144,9 @@ export default function Home({ sets, onCreateClick, onSelectSet, onEditSet, onDe
                             gap: '1.5rem',
                             cursor: 'grab',
                             opacity: draggedIndex === idx ? 0.5 : 1,
-                            transition: 'opacity 0.2s'
+                            transition: 'opacity 0.2s',
+                            touchAction: 'none',
+                            userSelect: 'none'
                         }}
                     >
                         <span style={{ cursor: 'grab', fontSize: '1.5em', opacity: 0.5 }}>⋮⋮</span>

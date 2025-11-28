@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 function EditSongCard({ song, index, onSave, onCancel }) {
     const [editedSong, setEditedSong] = useState({ ...song })
@@ -75,6 +75,43 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
 
     // State for drag and drop
     const [draggedIndex, setDraggedIndex] = useState(null)
+    const [touchStartY, setTouchStartY] = useState(null)
+    const [touchCurrentY, setTouchCurrentY] = useState(null)
+
+    // Auto-save functionality
+    const isInitialMount = useRef(true)
+    const autoSaveTimeoutRef = useRef(null)
+    const [saveStatus, setSaveStatus] = useState('saved') // 'saving', 'saved'
+
+    useEffect(() => {
+        // Skip auto-save on initial mount
+        if (isInitialMount.current) {
+            isInitialMount.current = false
+            return
+        }
+
+        // Clear any existing timeout
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current)
+        }
+
+        // Only auto-save if there's a title
+        if (title.trim()) {
+            setSaveStatus('saving')
+            // Debounce auto-save by 500ms
+            autoSaveTimeoutRef.current = setTimeout(() => {
+                onSave({ title, songs })
+                setSaveStatus('saved')
+            }, 500)
+        }
+
+        // Cleanup timeout on unmount
+        return () => {
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current)
+            }
+        }
+    }, [title, songs, onSave])
 
     const addSong = () => {
         if (!currentSong.title) return
@@ -124,6 +161,54 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
         setDraggedIndex(null)
     }
 
+    // Touch event handlers for mobile
+    const handleTouchStart = (e, index) => {
+        setDraggedIndex(index)
+        setTouchStartY(e.touches[0].clientY)
+        setTouchCurrentY(e.touches[0].clientY)
+    }
+
+    const handleTouchMove = (e, index) => {
+        if (draggedIndex === null) return
+        e.preventDefault()
+
+        const touchY = e.touches[0].clientY
+        setTouchCurrentY(touchY)
+
+        // Get the element being dragged
+        const draggedElement = e.currentTarget
+        const rect = draggedElement.getBoundingClientRect()
+
+        // Find which element we're hovering over
+        const elements = Array.from(draggedElement.parentNode.children)
+        let hoveredIndex = null
+
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i]
+            const elRect = el.getBoundingClientRect()
+            if (touchY >= elRect.top && touchY <= elRect.bottom) {
+                hoveredIndex = i
+                break
+            }
+        }
+
+        if (hoveredIndex !== null && hoveredIndex !== draggedIndex) {
+            const newSongs = [...songs]
+            const draggedSong = newSongs[draggedIndex]
+            newSongs.splice(draggedIndex, 1)
+            newSongs.splice(hoveredIndex, 0, draggedSong)
+
+            setSongs(newSongs)
+            setDraggedIndex(hoveredIndex)
+        }
+    }
+
+    const handleTouchEnd = () => {
+        setDraggedIndex(null)
+        setTouchStartY(null)
+        setTouchCurrentY(null)
+    }
+
     const handleSave = () => {
         if (!title) return alert('Please enter a set title')
 
@@ -140,7 +225,22 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
 
     return (
         <div className="animate-fade-in" style={{ width: '100%', textAlign: 'left', paddingBottom: '100px' }}>
-            <button onClick={onCancel} style={{ marginBottom: '1rem', background: 'transparent', paddingLeft: 0 }}>← Back to Home</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <button onClick={onCancel} style={{ background: 'transparent', paddingLeft: 0 }}>← Back to Home</button>
+                <div style={{ fontSize: '0.9rem', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {saveStatus === 'saving' ? (
+                        <>
+                            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#ffcc00' }}></span>
+                            Saving...
+                        </>
+                    ) : (
+                        <>
+                            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#00ff88' }}></span>
+                            All changes saved
+                        </>
+                    )}
+                </div>
+            </div>
             <h1>{initialData ? 'Edit Set' : 'Create New Set'}</h1>
 
             <div className="glass" style={{ padding: '2rem', marginBottom: '2rem' }}>
@@ -228,6 +328,9 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                                     onDragStart={() => handleDragStart(idx)}
                                     onDragOver={(e) => handleDragOver(e, idx)}
                                     onDragEnd={handleDragEnd}
+                                    onTouchStart={(e) => handleTouchStart(e, idx)}
+                                    onTouchMove={(e) => handleTouchMove(e, idx)}
+                                    onTouchEnd={handleTouchEnd}
                                     className="glass"
                                     style={{
                                         padding: '1rem',
@@ -237,7 +340,9 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                                         background: `linear-gradient(90deg, ${song.color}11, transparent)`,
                                         cursor: 'grab',
                                         opacity: draggedIndex === idx ? 0.5 : 1,
-                                        transition: 'opacity 0.2s'
+                                        transition: 'opacity 0.2s',
+                                        touchAction: 'none',
+                                        userSelect: 'none'
                                     }}
                                 >
                                     <div style={{ overflow: 'hidden', flex: 1 }}>
@@ -259,10 +364,6 @@ export default function SetCreator({ onSave, onCancel, initialData }) {
                         ))}
                     </div>
                 </div>
-            </div>
-
-            <div style={{ marginTop: '3rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
-                <button className="primary" onClick={handleSave} style={{ fontSize: '1.2rem', padding: '1rem 4rem' }}>Save Set</button>
             </div>
         </div>
     )

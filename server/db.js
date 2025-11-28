@@ -48,6 +48,35 @@ export async function initDB() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Migration: Add position column to existing sets table if it doesn't exist
+    const [columns] = await connection.query(`
+      SHOW COLUMNS FROM sets LIKE 'position'
+    `);
+
+    if (columns.length === 0) {
+      console.log('🔄 Running migration: Adding position field to sets table...');
+
+      await connection.query(`
+        ALTER TABLE sets
+        ADD COLUMN position INT DEFAULT 0 AFTER title,
+        ADD INDEX idx_position (position)
+      `);
+
+      // Initialize positions based on created_at (newest first gets position 0, 1, 2...)
+      const [sets] = await connection.query(`
+        SELECT id FROM sets ORDER BY created_at DESC
+      `);
+
+      for (let i = 0; i < sets.length; i++) {
+        await connection.query(
+          'UPDATE sets SET position = ? WHERE id = ?',
+          [i, sets[i].id]
+        );
+      }
+
+      console.log(`✅ Migration completed: Initialized positions for ${sets.length} sets`);
+    }
+
     console.log('✅ Database schema initialized');
   } catch (error) {
     console.error('❌ Database initialization error:', error);

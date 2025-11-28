@@ -26,6 +26,21 @@ export default function SetViewer({ set, onExit }) {
     return (
         <div style={{ width: '100%', minHeight: '100vh', paddingBottom: activeSong ? '0' : '50px' }}>
             <div className="animate-fade-in">
+                {/* Back Navigation */}
+                {!activeSong && (
+                    <button
+                        onClick={onExit}
+                        style={{
+                            background: 'transparent',
+                            paddingLeft: 0,
+                            marginBottom: '1rem',
+                            fontSize: '1rem'
+                        }}
+                    >
+                        ← Back to Sets
+                    </button>
+                )}
+
                 {/* Navigation Header */}
                 <div
                     onClick={() => setActiveSongIndex(null)}
@@ -44,56 +59,57 @@ export default function SetViewer({ set, onExit }) {
                         alignItems: 'center'
                     }}
                 >
+                    {activeSong && (
+                        <div style={{ alignSelf: 'flex-start', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>← Tap title for song list</span>
+                        </div>
+                    )}
                     <h1 style={{
                         fontSize: activeSong ? '1.5rem' : '3.5rem',
                         margin: 0,
-                        cursor: 'pointer',
+                        cursor: activeSong ? 'pointer' : 'default',
                         lineHeight: 1.2
                     }}>
                         {set.title}
                     </h1>
-                    {activeSong && <span style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '5px' }}>Tap title to view song list</span>}
                 </div>
 
                 {/* Song List View */}
                 {!activeSong && (
-                    <>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-                            {set.songs.map((song, idx) => (
-                                <div
-                                    key={song.id}
-                                    className="glass"
-                                    onClick={() => setActiveSongIndex(idx)}
-                                    style={{
-                                        padding: '1.5rem',
-                                        cursor: 'pointer',
-                                        background: `linear-gradient(90deg, ${song.color}22, rgba(255,255,255,0.05))`,
-                                        borderLeft: `4px solid ${song.color}`,
-                                        transition: 'transform 0.2s, background 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        textAlign: 'left'
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.transform = 'scale(1.02)'
-                                        e.currentTarget.style.background = `linear-gradient(90deg, ${song.color}44, rgba(255,255,255,0.1))`
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.transform = 'scale(1)'
-                                        e.currentTarget.style.background = `linear-gradient(90deg, ${song.color}22, rgba(255,255,255,0.05))`
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <span style={{ opacity: 0.5, fontSize: '0.9em', width: '20px' }}>{idx + 1}</span>
-                                        <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>{song.title}</h3>
-                                    </div>
-                                    <span style={{ opacity: 0.3 }}>›</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+                        {set.songs.map((song, idx) => (
+                            <div
+                                key={song.id}
+                                className="glass"
+                                onClick={() => setActiveSongIndex(idx)}
+                                style={{
+                                    padding: '1.5rem',
+                                    cursor: 'pointer',
+                                    background: `linear-gradient(90deg, ${song.color}22, rgba(255,255,255,0.05))`,
+                                    borderLeft: `4px solid ${song.color}`,
+                                    transition: 'transform 0.2s, background 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    textAlign: 'left'
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.transform = 'scale(1.02)'
+                                    e.currentTarget.style.background = `linear-gradient(90deg, ${song.color}44, rgba(255,255,255,0.1))`
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.transform = 'scale(1)'
+                                    e.currentTarget.style.background = `linear-gradient(90deg, ${song.color}22, rgba(255,255,255,0.05))`
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <span style={{ opacity: 0.5, fontSize: '0.9em', width: '20px' }}>{idx + 1}</span>
+                                    <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>{song.title}</h3>
                                 </div>
-                            ))}
-                        </div>
-                        <button onClick={onExit} style={{ marginTop: '4rem', background: 'transparent', opacity: 0.5 }}>Exit Set</button>
-                    </>
+                                <span style={{ opacity: 0.3 }}>›</span>
+                            </div>
+                        ))}
+                    </div>
                 )}
 
                 {/* Lyrics View */}
